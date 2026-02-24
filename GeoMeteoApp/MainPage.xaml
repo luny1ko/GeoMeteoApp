@@ -1,0 +1,152 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GeoMeteoApp.MainPage"
+             Title="Geo Meteo">
+
+    <ContentPage.Background>
+        <LinearGradientBrush x:Name="MainGradient" StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#4A00E0" Offset="0.0" />
+            <GradientStop Color="#8E2DE2" Offset="0.5" />
+            <GradientStop Color="#fc6767" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <ScrollView>
+        <VerticalStackLayout x:Name="MainContainer" 
+                             Opacity="0" 
+                             Spacing="25" 
+                             Padding="20,40,20,40" 
+                             MaximumWidthRequest="500" 
+                             HorizontalOptions="Center" >
+
+            <!-- ЛОГОТИП И ПРИВЕТСТВИЕ -->
+            <VerticalStackLayout Spacing="5">
+                <Label Text="GEO METEO" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" CharacterSpacing="4" Opacity="0.8"/>
+                <Label x:Name="GreetingLabel" Text="Привет!" TextColor="White" FontSize="32" FontAttributes="Bold" HorizontalOptions="Center">
+                    <Label.Shadow>
+                        <Shadow Brush="Black" Offset="2,2" Radius="10" Opacity="0.4"/>
+                    </Label.Shadow>
+                </Label>
+            </VerticalStackLayout>
+
+            <!-- КАРТОЧКА УПРАВЛЕНИЯ -->
+            <Border Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 30" Padding="25">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#40FFFFFF" Offset="0.0" />
+                        <GradientStop Color="#05FFFFFF" Offset="1.0" />
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,10" Radius="30" Opacity="0.2"/>
+                </Border.Shadow>
+
+                <VerticalStackLayout Spacing="20">
+                    <Label Text="ПОИСК ЛОКАЦИИ" TextColor="#F0F0F0" FontSize="11" FontAttributes="Bold" CharacterSpacing="2" HorizontalOptions="Center" Opacity="0.8"/>
+
+                    <!-- ФИКС ОБРЕЗКИ: Заменили HorizontalStackLayout на Grid -->
+                    <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="10">
+
+                        <!-- ВЫБОР ГОРОДА (Колонка '*') -->
+                        <Border Grid.Column="0" BackgroundColor="#25FFFFFF" Stroke="White" StrokeThickness="1" StrokeShape="RoundRectangle 15" Padding="10,0" HeightRequest="80">
+                            <Picker x:Name="CityPicker" 
+                                    Title="Город..." 
+                                    TitleColor="#E0E0E0" 
+                                    TextColor="White" 
+                                    FontSize="16" 
+                                    VerticalOptions="Center" 
+                                    HorizontalTextAlignment="Center"/>
+                        </Border>
+
+                        <!-- Кнопка ПЛЮС (Колонка 'Auto') -->
+                        <Border Grid.Column="1" x:Name="BtnAdd" WidthRequest="50" HeightRequest="50" BackgroundColor="#40FFFFFF" Stroke="White" StrokeThickness="1" StrokeShape="RoundRectangle 25" VerticalOptions="Center">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnShowAddCityClicked"/>
+                            </Border.GestureRecognizers>
+                            <Label Text="+" TextColor="White" FontSize="30" HorizontalOptions="Center" VerticalOptions="Center" Margin="0,-2,0,0"/>
+                        </Border>
+
+                        <!-- Кнопка УДАЛИТЬ (Колонка 'Auto') -->
+                        <Border Grid.Column="2" x:Name="BtnDelete" WidthRequest="50" HeightRequest="50" BackgroundColor="#25FF5252" Stroke="#FF8A80" StrokeThickness="1" StrokeShape="RoundRectangle 25" VerticalOptions="Center">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer Tapped="OnDeleteCityClicked"/>
+                            </Border.GestureRecognizers>
+                            <Label Text="✕" TextColor="White" FontSize="18" HorizontalOptions="Center" VerticalOptions="Center" />
+                        </Border>
+                    </Grid>
+
+                    <!-- Поле ввода -->
+                    <Border x:Name="AddCityLayout" StrokeThickness="0" BackgroundColor="Transparent" IsVisible="False">
+                        <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
+                            <Border BackgroundColor="#25FFFFFF" Stroke="White" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="10,0" Grid.Column="0">
+                                <Entry x:Name="NewCityEntry" Placeholder="Название..." PlaceholderColor="#DDD" TextColor="White"/>
+                            </Border>
+                            <Button Grid.Column="1" Text="OK" Clicked="OnAddCityConfirmClicked" BackgroundColor="White" TextColor="#4A00E0" CornerRadius="10" FontAttributes="Bold"/>
+                        </Grid>
+                    </Border>
+
+                    <!-- ГЛАВНАЯ КНОПКА -->
+                    <Border x:Name="MainActionButton" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 30" HeightRequest="60" Margin="0,15,0,10" Padding="0">
+                        <Border.Shadow>
+                            <Shadow Brush="Black" Offset="0,8" Radius="15" Opacity="0.2"/>
+                        </Border.Shadow>
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer Tapped="OnGetWeatherClicked"/>
+                        </Border.GestureRecognizers>
+                        <Label Text="УЗНАТЬ ПОГОДУ" TextColor="#4A00E0" FontSize="16" FontAttributes="Bold" HorizontalOptions="Center" VerticalOptions="Center" CharacterSpacing="1"/>
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+
+            <!-- КАРТОЧКА РЕЗУЛЬТАТА -->
+            <Border x:Name="WeatherResultLayout" IsVisible="False" Opacity="0" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 30" Padding="30">
+                <Border.Background>
+                    <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+                        <GradientStop Color="#30FFFFFF" Offset="0.0" />
+                        <GradientStop Color="#10FFFFFF" Offset="1.0" />
+                    </LinearGradientBrush>
+                </Border.Background>
+                <Border.Shadow>
+                    <Shadow Brush="Black" Offset="0,15" Radius="40" Opacity="0.25"/>
+                </Border.Shadow>
+
+                <VerticalStackLayout Spacing="10" HorizontalOptions="Center">
+                    <Label x:Name="WeatherIconLabel" Text="🌤" FontSize="90" HorizontalOptions="Center">
+                        <Label.Shadow>
+                            <Shadow Brush="Black" Offset="0,5" Radius="10" Opacity="0.2"/>
+                        </Label.Shadow>
+                    </Label>
+
+                    <Label x:Name="TempLabel" Text="25°" FontSize="80" TextColor="White" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,-10,0,0"/>
+                    <Label x:Name="DescLabel" Text="ЯСНО" FontSize="18" TextColor="#F0F0F0" HorizontalOptions="Center" CharacterSpacing="2" TextTransform="Uppercase"/>
+
+                    <BoxView HeightRequest="1" Color="#80FFFFFF" WidthRequest="200" Margin="0,20"/>
+
+                    <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="30" RowSpacing="20">
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="2">
+                            <Label Text="💧 ВЛАЖНОСТЬ" TextColor="#DDD" FontSize="10" HorizontalOptions="Center" FontAttributes="Bold"/>
+                            <Label x:Name="HumidityLabel" Text="85%" TextColor="White" FontSize="16" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Row="0" Grid.Column="1" Spacing="2">
+                            <Label Text="🧭 ДАВЛЕНИЕ" TextColor="#DDD" FontSize="10" HorizontalOptions="Center" FontAttributes="Bold"/>
+                            <Label x:Name="PressureLabel" Text="750 мм" TextColor="White" FontSize="16" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Row="1" Grid.Column="0" Spacing="2">
+                            <Label Text="💨 ВЕТЕР" TextColor="#DDD" FontSize="10" HorizontalOptions="Center" FontAttributes="Bold"/>
+                            <Label x:Name="WindLabel" Text="5 м/с" TextColor="White" FontSize="16" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Grid.Row="1" Grid.Column="1" Spacing="2">
+                            <Label Text="🌡 ОЩУЩАЕТСЯ" TextColor="#DDD" FontSize="10" HorizontalOptions="Center" FontAttributes="Bold"/>
+                            <Label x:Name="FeelsLikeLabel" Text="23°" TextColor="White" FontSize="16" FontAttributes="Bold" HorizontalOptions="Center"/>
+                        </VerticalStackLayout>
+                    </Grid>
+
+                    <Border BackgroundColor="#30000000" Stroke="#80FFFFFF" StrokeThickness="1" StrokeShape="RoundRectangle 15" Padding="15" Margin="0,20,0,0">
+                        <Label x:Name="AdviceLabel" Text="..." TextColor="White" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center" FontAttributes="Italic"/>
+                    </Border>
+                </VerticalStackLayout>
+            </Border>
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

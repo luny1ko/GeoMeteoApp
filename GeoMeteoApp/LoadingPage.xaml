@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="GeoMeteoApp.LoadingPage"
+             NavigationPage.HasNavigationBar="False">
+
+    <!-- Тот же градиент, чтобы переход был бесшовным -->
+    <ContentPage.Background>
+        <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
+            <GradientStop Color="#4A00E0" Offset="0.0" />
+            <GradientStop Color="#8E2DE2" Offset="0.5" />
+            <GradientStop Color="#fc6767" Offset="1.0" />
+        </LinearGradientBrush>
+    </ContentPage.Background>
+
+    <Grid>
+        <!-- Центр экрана -->
+        <VerticalStackLayout Spacing="20" VerticalOptions="Center" HorizontalOptions="Center">
+
+            <!-- 1. Иконка Солнца (Скрыта, появится в анимации) -->
+            <Label x:Name="LogoIcon" 
+                   Text="☀️" 
+                   FontSize="120" 
+                   HorizontalOptions="Center" 
+                   Opacity="0"
+                   TranslationY="100">
+                <Label.Shadow>
+                    <Shadow Brush="Black" Offset="0,10" Radius="20" Opacity="0.3"/>
+                </Label.Shadow>
+            </Label>
+
+            <!-- 2. Название (Скрыто) -->
+            <Label x:Name="LogoText" 
+                   Text="GEO METEO" 
+                   TextColor="White" 
+                   FontSize="32" 
+                   FontAttributes="Bold" 
+                   HorizontalOptions="Center" 
+                   CharacterSpacing="8"
+                   Opacity="0"
+                   Scale="0.5"/>
+
+            <!-- 3. Индикатор загрузки (Крутилка) -->
+            <ActivityIndicator x:Name="Spinner" 
+                               IsRunning="True" 
+                               Color="White" 
+                               Margin="0,50,0,0"
+                               Opacity="0"/>
+
+            <Label x:Name="LoadingStatus"
+                   Text="Запуск спутников..."
+                   TextColor="#E0E0E0"
+                   FontSize="12"
+                   HorizontalOptions="Center"
+                   Opacity="0"/>
+
+        </VerticalStackLayout>
+
+        <!-- Версия внизу -->
+        <Label Text="v 1.0.0 Alpha" 
+               TextColor="#80FFFFFF" 
+               FontSize="10" 
+               VerticalOptions="End" 
+               HorizontalOptions="Center" 
+               Margin="0,0,0,30"/>
+    </Grid>
+
+</ContentPage>
