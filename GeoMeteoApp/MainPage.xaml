@@ -13,16 +13,16 @@
     </ContentPage.Background>
 
     <ScrollView>
+        <!-- Устанавливаем Fill, чтобы контейнер не сжимал детей -->
         <VerticalStackLayout x:Name="MainContainer" 
                              Opacity="0" 
                              Spacing="25" 
-                             Padding="20,40,20,40" 
-                             MaximumWidthRequest="500" 
-                             HorizontalOptions="Center" >
+                             Padding="0,40,0,40" 
+                             HorizontalOptions="Fill">
 
-            <!-- ЛОГОТИП И ПРИВЕТСТВИЕ -->
-            <VerticalStackLayout Spacing="5">
-                <Label Text="GEO METEO" TextColor="White" FontSize="24" FontAttributes="Bold" HorizontalOptions="Center" CharacterSpacing="4" Opacity="0.8"/>
+            <!-- ЛОГОТИП -->
+            <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
+                <Label Text="GEO METEO" TextColor="White" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center" CharacterSpacing="4" Opacity="0.7"/>
                 <Label x:Name="GreetingLabel" Text="Привет!" TextColor="White" FontSize="32" FontAttributes="Bold" HorizontalOptions="Center">
                     <Label.Shadow>
                         <Shadow Brush="Black" Offset="2,2" Radius="10" Opacity="0.4"/>
@@ -30,8 +30,13 @@
                 </Label>
             </VerticalStackLayout>
 
-            <!-- КАРТОЧКА УПРАВЛЕНИЯ -->
-            <Border Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 30" Padding="25">
+            <!-- КАРТОЧКА УПРАВЛЕНИЯ (ЖЕСТКАЯ ШИРИНА 460) -->
+            <Border Stroke="White" 
+                    StrokeThickness="2" 
+                    StrokeShape="RoundRectangle 30" 
+                    Padding="25"
+                    WidthRequest="460"
+                    HorizontalOptions="Center">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                         <GradientStop Color="#40FFFFFF" Offset="0.0" />
@@ -45,21 +50,12 @@
                 <VerticalStackLayout Spacing="20">
                     <Label Text="ПОИСК ЛОКАЦИИ" TextColor="#F0F0F0" FontSize="11" FontAttributes="Bold" CharacterSpacing="2" HorizontalOptions="Center" Opacity="0.8"/>
 
-                    <!-- ФИКС ОБРЕЗКИ: Заменили HorizontalStackLayout на Grid -->
-                    <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="10">
-
-                        <!-- ВЫБОР ГОРОДА (Колонка '*') -->
+                    <!-- СЕТКА: Поле города и кнопки -->
+                    <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="12">
                         <Border Grid.Column="0" BackgroundColor="#25FFFFFF" Stroke="White" StrokeThickness="1" StrokeShape="RoundRectangle 15" Padding="10,0" HeightRequest="80">
-                            <Picker x:Name="CityPicker" 
-                                    Title="Город..." 
-                                    TitleColor="#E0E0E0" 
-                                    TextColor="White" 
-                                    FontSize="16" 
-                                    VerticalOptions="Center" 
-                                    HorizontalTextAlignment="Center"/>
+                            <Picker x:Name="CityPicker" Title="Город..." TitleColor="#E0E0E0" TextColor="White" FontSize="16" VerticalOptions="Center" HorizontalTextAlignment="Center"/>
                         </Border>
 
-                        <!-- Кнопка ПЛЮС (Колонка 'Auto') -->
                         <Border Grid.Column="1" x:Name="BtnAdd" WidthRequest="50" HeightRequest="50" BackgroundColor="#40FFFFFF" Stroke="White" StrokeThickness="1" StrokeShape="RoundRectangle 25" VerticalOptions="Center">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnShowAddCityClicked"/>
@@ -67,8 +63,7 @@
                             <Label Text="+" TextColor="White" FontSize="30" HorizontalOptions="Center" VerticalOptions="Center" Margin="0,-2,0,0"/>
                         </Border>
 
-                        <!-- Кнопка УДАЛИТЬ (Колонка 'Auto') -->
-                        <Border Grid.Column="2" x:Name="BtnDelete" WidthRequest="50" HeightRequest="50" BackgroundColor="#25FF5252" Stroke="#FF8A80" StrokeThickness="1" StrokeShape="RoundRectangle 25" VerticalOptions="Center">
+                        <Border Grid.Column="2" x:Name="BtnDelete" WidthRequest="50" HeightRequest="50" BackgroundColor="#25FF5252" Stroke="#FF5252" StrokeThickness="1" StrokeShape="RoundRectangle 25" VerticalOptions="Center">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer Tapped="OnDeleteCityClicked"/>
                             </Border.GestureRecognizers>
@@ -86,8 +81,8 @@
                         </Grid>
                     </Border>
 
-                    <!-- ГЛАВНАЯ КНОПКА -->
-                    <Border x:Name="MainActionButton" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 30" HeightRequest="60" Margin="0,15,0,10" Padding="0">
+                    <!-- КНОПКА (С нормальной черной тенью и запасом Margin) -->
+                    <Border x:Name="MainActionButton" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 30" HeightRequest="60" Margin="5,15,5,10">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,8" Radius="15" Opacity="0.2"/>
                         </Border.Shadow>
@@ -99,8 +94,16 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!-- КАРТОЧКА РЕЗУЛЬТАТА -->
-            <Border x:Name="WeatherResultLayout" IsVisible="False" Opacity="0" Stroke="White" StrokeThickness="2" StrokeShape="RoundRectangle 30" Padding="30">
+            <!-- КАРТОЧКА РЕЗУЛЬТАТА (ЖЕСТКАЯ ШИРИНА 460) -->
+            <Border x:Name="WeatherResultLayout" 
+                    IsVisible="False" 
+                    Opacity="0" 
+                    Stroke="White" 
+                    StrokeThickness="2" 
+                    StrokeShape="RoundRectangle 30" 
+                    Padding="30"
+                    WidthRequest="460"
+                    HorizontalOptions="Center">
                 <Border.Background>
                     <LinearGradientBrush StartPoint="0,0" EndPoint="1,1">
                         <GradientStop Color="#30FFFFFF" Offset="0.0" />
@@ -121,8 +124,9 @@
                     <Label x:Name="TempLabel" Text="25°" FontSize="80" TextColor="White" FontAttributes="Bold" HorizontalOptions="Center" Margin="0,-10,0,0"/>
                     <Label x:Name="DescLabel" Text="ЯСНО" FontSize="18" TextColor="#F0F0F0" HorizontalOptions="Center" CharacterSpacing="2" TextTransform="Uppercase"/>
 
-                    <BoxView HeightRequest="1" Color="#80FFFFFF" WidthRequest="200" Margin="0,20"/>
+                    <BoxView HeightRequest="1" Color="#80FFFFFF" WidthRequest="200" Margin="0,20" HorizontalOptions="Center"/>
 
+                    <!-- СЕТКА ДАННЫХ -->
                     <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="30" RowSpacing="20">
                         <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="2">
                             <Label Text="💧 ВЛАЖНОСТЬ" TextColor="#DDD" FontSize="10" HorizontalOptions="Center" FontAttributes="Bold"/>
@@ -142,7 +146,7 @@
                         </VerticalStackLayout>
                     </Grid>
 
-                    <Border BackgroundColor="#30000000" Stroke="#80FFFFFF" StrokeThickness="1" StrokeShape="RoundRectangle 15" Padding="15" Margin="0,20,0,0">
+                    <Border BackgroundColor="#30000000" Stroke="#80FFFFFF" StrokeThickness="1" StrokeShape="RoundRectangle 15" Padding="15" Margin="0,25,0,0">
                         <Label x:Name="AdviceLabel" Text="..." TextColor="White" FontSize="14" HorizontalOptions="Center" HorizontalTextAlignment="Center" FontAttributes="Italic"/>
                     </Border>
                 </VerticalStackLayout>
