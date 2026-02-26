@@ -6,9 +6,26 @@ namespace GeoMeteoApp;
 
 public partial class MainPage : ContentPage
 {
+    
+    private const string YANDEX_API_KEY = "8c9e615d-1c38-4b72-8669-288a9db3e35a";
     public ObservableCollection<string> Cities { get; set; } = new ObservableCollection<string>();
-    private static readonly HttpClient _httpClient = new HttpClient();
+    private static readonly HttpClient _httpClient = CreateHttpClient();
     private bool _isAnimating = false;
+
+  
+    private static HttpClient CreateHttpClient()
+    {
+        var handler = new HttpClientHandler
+        {
+            ServerCertificateCustomValidationCallback = (sender, cert, chain, sslPolicyErrors) => true,
+            Proxy = System.Net.WebRequest.GetSystemWebProxy(),
+            UseProxy = true
+        };
+        var client = new HttpClient(handler);
+        client.DefaultRequestHeaders.Add("X-Yandex-Weather-Key", YANDEX_API_KEY);
+
+        return client;
+    }
 
     public MainPage()
     {
@@ -18,20 +35,14 @@ public partial class MainPage : ContentPage
         if (Cities.Count > 0) CityPicker.SelectedIndex = 0;
     }
 
-    // --- АНИМАЦИЯ ПОЯВЛЕНИЯ ВСЕГО ИНТЕРФЕЙСА ---
     protected override async void OnAppearing()
     {
         base.OnAppearing();
-
-        // Если VS всё еще подчеркивает MainContainer, 
-        // просто нажми "Перестроить решение", код верный.
         MainContainer.TranslationY = 30;
-
         await Task.WhenAll(
             MainContainer.FadeTo(1, 800, Easing.CubicOut),
             MainContainer.TranslateTo(0, 0, 800, Easing.CubicOut)
         );
-
         UpdateGreeting();
     }
 
@@ -57,8 +68,8 @@ public partial class MainPage : ContentPage
             }
         }
         Cities.Add("Москва");
+        Cities.Add("Солнечногорск");
         Cities.Add("Дубай");
-        Cities.Add("Токио");
     }
 
     private void SaveCities()
@@ -80,8 +91,6 @@ public partial class MainPage : ContentPage
         await BtnDelete.ScaleTo(1, 200, Easing.SpringOut);
 
         if (CityPicker.SelectedItem == null) return;
-
-        // Исправление CS8600 (добавили ?)
         string? selectedCity = CityPicker.SelectedItem.ToString();
         if (string.IsNullOrEmpty(selectedCity)) return;
 
@@ -114,209 +123,193 @@ public partial class MainPage : ContentPage
 
     private async void OnGetWeatherClicked(object sender, EventArgs e)
     {
-        await MainActionButton.ScaleTo(0.9, 50);
-        await MainActionButton.ScaleTo(1, 300, Easing.SpringOut);
+        await MainActionButton.ScaleTo(0.95, 50);
+        await MainActionButton.ScaleTo(1, 150, Easing.SpringOut);
 
         if (CityPicker.SelectedItem == null) return;
         string? selectedCity = CityPicker.SelectedItem?.ToString();
+        if (string.IsNullOrEmpty(selectedCity)) return;
 
         _isAnimating = false;
         WeatherIconLabel.CancelAnimations();
-        WeatherIconLabel.TranslationY = 0;
-        WeatherIconLabel.RotationY = 0;
+        WeatherResultLayout.CancelAnimations();
 
-        if (WeatherResultLayout.IsVisible) _ = WeatherResultLayout.FadeTo(0, 150);
+        if (WeatherResultLayout.IsVisible) await WeatherResultLayout.FadeTo(0, 150);
+        WeatherIconLabel.TranslationY = 0;
 
         UpdateGreeting();
         TempLabel.Text = "0°";
-        DescLabel.Text = "АНАЛИЗ...";
-        AdviceLabel.Text = "...";
+        DescLabel.Text = "ПОИСК СВЯЗИ...";
+        AdviceLabel.Text = "Соединение с Яндексом...";
         WeatherIconLabel.Text = "🔮";
 
         WeatherResultLayout.IsVisible = true;
         WeatherResultLayout.Opacity = 0;
-        WeatherResultLayout.RotationX = -90;
-        WeatherResultLayout.TranslationY = 100;
+        WeatherResultLayout.Scale = 0.8;
+        WeatherResultLayout.TranslationY = 50;
 
         try
         {
-            string geoUrl = $"https://geocoding-api.open-meteo.com/v1/search?name={selectedCity}&count=1&language=ru";
-            var geoResult = await _httpClient.GetFromJsonAsync<GeoResponse>(geoUrl);
-
-            if (geoResult?.Results == null || geoResult.Results.Length == 0)
+            if (YANDEX_API_KEY == "ВСТАВЬ_СЮДА_СВОЙ_КЛЮЧ")
             {
-                DescLabel.Text = "НЕ НАЙДЕНО";
-                WeatherIconLabel.Text = "❌";
-                AdviceLabel.Text = "Попробуйте ввести другое название.";
+                throw new Exception("Не указан API-ключ Яндекса в коде!");
+            }
+
+           
+            double lat = 0, lon = 0;
+            bool coordsFound = false;
+
+            var fallback = GetFallbackCoordinates(selectedCity);
+            if (fallback != null)
+            {
+                lat = fallback.Value.Lat;
+                lon = fallback.Value.Lon;
+                coordsFound = true;
             }
             else
             {
-                double lat = geoResult.Results[0].Latitude;
-                double lon = geoResult.Results[0].Longitude;
+              
+                string encodedCity = Uri.EscapeDataString(selectedCity);
+                string geoUrl = $"http://geocoding-api.open-meteo.com/v1/search?name={encodedCity}&count=1&language=ru";
+                var geoResult = await _httpClient.GetFromJsonAsync<GeoResponse>(geoUrl);
+
+                if (geoResult?.Results != null && geoResult.Results.Length > 0)
+                {
+                    lat = geoResult.Results[0].Latitude;
+                    lon = geoResult.Results[0].Longitude;
+                    coordsFound = true;
+                }
+            }
+
+            if (!coordsFound)
+            {
+                DescLabel.Text = "НЕ НАЙДЕНО";
+                WeatherIconLabel.Text = "❌";
+                AdviceLabel.Text = "Не смогли найти координаты этого города.";
+            }
+            else
+            {                
                 string latStr = lat.ToString(System.Globalization.CultureInfo.InvariantCulture);
                 string lonStr = lon.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
-                string weatherUrl = $"https://api.open-meteo.com/v1/forecast?latitude={latStr}&longitude={lonStr}&current=temperature_2m,relative_humidity_2m,surface_pressure,weather_code,apparent_temperature,wind_speed_10m";
-                var weatherResult = await _httpClient.GetFromJsonAsync<WeatherResponse>(weatherUrl);
+                string yandexUrl = $"https://api.weather.yandex.ru/v2/forecast?lat={latStr}&lon={lonStr}&lang=ru_RU";
 
-                if (weatherResult?.Current != null)
+                var weatherResult = await _httpClient.GetFromJsonAsync<YandexWeatherResponse>(yandexUrl);
+
+                if (weatherResult?.Fact != null)
                 {
-                    int code = weatherResult.Current.WeatherCode;
-                    int pressure = (int)(weatherResult.Current.SurfacePressure * 0.750062);
-                    int temp = (int)Math.Round(weatherResult.Current.Temperature);
-                    int feelsLike = (int)Math.Round(weatherResult.Current.ApparentTemperature);
-                    int wind = (int)Math.Round(weatherResult.Current.WindSpeed);
+                    int temp = (int)Math.Round(weatherResult.Fact.Temp);
+                    int feelsLike = (int)Math.Round(weatherResult.Fact.FeelsLike);
+                    int wind = (int)Math.Round(weatherResult.Fact.WindSpeed);
+                    int pressure = (int)Math.Round(weatherResult.Fact.PressureMm);
+                    int humidity = (int)Math.Round(weatherResult.Fact.Humidity);
+                    string condition = weatherResult.Fact.Condition ?? "clear";
 
                     TempLabel.Text = $"{temp}°";
                     FeelsLikeLabel.Text = $"{feelsLike}°";
                     WindLabel.Text = $"{wind} м/с";
                     PressureLabel.Text = $"{pressure} мм";
-                    HumidityLabel.Text = $"{weatherResult.Current.RelativeHumidity}%";
+                    HumidityLabel.Text = $"{humidity}%";
 
-                    DescLabel.Text = GetWeatherDescription(code);
-                    WeatherIconLabel.Text = GetWeatherIcon(code);
-                    AdviceLabel.Text = GetSmartAdvice(code, temp, wind);
+                    // Переводим ответ Яндекса на наш язык и иконки
+                    DescLabel.Text = GetYandexDescription(condition);
+                    WeatherIconLabel.Text = GetYandexIcon(condition);
+                    AdviceLabel.Text = GetSmartAdvice(condition, temp, wind);
 
-                    SetBackgroundTheme(code);
+                    SetBackgroundTheme(condition);
 
                     _isAnimating = true;
                     StartFloatingAnimation();
                 }
             }
         }
-        catch (Exception)
+        catch (Exception ex)
         {
-            DescLabel.Text = "НЕТ СЕТИ";
+            DescLabel.Text = "ОШИБКА АПИ";
             WeatherIconLabel.Text = "🔌";
-            AdviceLabel.Text = "Проверьте интернет.";
+            string realError = ex.InnerException != null ? ex.InnerException.Message : ex.Message;
+            AdviceLabel.Text = $"Детали: {realError}";
         }
 
         await Task.WhenAll(
-            WeatherResultLayout.FadeTo(1, 600),
-            WeatherResultLayout.TranslateTo(0, 0, 600, Easing.SpringOut),
-            WeatherResultLayout.RotateXTo(0, 600, Easing.SpringOut)
+            WeatherResultLayout.FadeTo(1, 400),
+            WeatherResultLayout.TranslateTo(0, 0, 500, Easing.SpringOut),
+            WeatherResultLayout.ScaleTo(1, 500, Easing.SpringOut)
         );
     }
 
-    private string GetSmartAdvice(int code, int temp, int wind)
+ 
+    private (double Lat, double Lon)? GetFallbackCoordinates(string city)
     {
-        var random = new Random();
-        string[] advicePool;
+        var dict = new Dictionary<string, (double Lat, double Lon)>(StringComparer.OrdinalIgnoreCase)
+        {
+            { "Москва", (55.7558, 37.6173) },
+            { "Солнечногорск", (56.1850, 36.9780) },
+            { "Санкт-Петербург", (59.9343, 30.3351) },
+            { "Казань", (55.7961, 49.1064) },
+            { "Екатеринбург", (55.7887, 49.1221) },
+            { "Новосибирск", (55.0084, 82.9357) },
+            { "Дубай", (25.2048, 55.2708) },
+            { "Токио", (35.6895, 139.6917) },
+            { "Лондон", (51.5085, -0.1257) }
+        };
 
-        // 1. Экстремальный холод
-        if (temp < -20)
-        {
-            advicePool = new[] {
-            "🥶 Не выходи из комнаты, не совершай ошибку!",
-            "🧊 Официально: на улице морозилка. Сиди дома.",
-            "🐧 Даже пингвины сегодня в шоке. Утепляйся максимально!",
-            "🔥 Твоя единственная цель на сегодня — горячий чай и плед."
-        };
-        }
-        // 2. Просто холодно
-        else if (temp < -5)
-        {
-            advicePool = new[] {
-            "🧣 Шапка, шарф и варежки — твои лучшие друзья сегодня.",
-            "☕ Идеальное время для двойного латте и теплого свитера.",
-            "🚶 Пробежка до метро засчитывается за кардио.",
-            "👂 Уши отморозишь! Надень шапку, мама была права."
-        };
-        }
-        // 3. Жара
-        else if (temp > 27)
-        {
-            advicePool = new[] {
-            "🥤 Пей больше воды и старайся держаться тени.",
-            "🍦 Официальное разрешение на поедание трех порций мороженого получено.",
-            "☀️ Солнце сегодня злое. Не забудь SPF, если не хочешь быть как рак.",
-            "⛱️ Идеально для пляжа. Или хотя бы для кондиционера."
-        };
-        }
-        // 4. Дождь / Гроза
-        else if (code is 61 or 63 or 65 or 80 or 81 or 82 or 95 or 96 or 99)
-        {
-            advicePool = new[] {
-            "☔ Зонт — это не аксессуар, это средство выживания.",
-            "🌧️ Отличный повод пересмотреть любимый сериал под шум дождя.",
-            "💦 Лужи глубокие, прыгай осторожнее (или нет).",
-            "🍵 Погода шепчет: заваривай чай и никуда не иди."
-        };
-        }
-        // 5. Сильный ветер
-        else if (wind > 12)
-        {
-            advicePool = new[] {
-            "💨 Осторожно, сдувает! Держись за столбы.",
-            "🪁 Идеально для запуска змея, но плохо для твоей прически.",
-            "🧥 Надень что-то непродуваемое, иначе будешь как парус.",
-            "🌪️ Ветер сегодня с характером. Будь аккуратнее на поворотах."
-        };
-        }
-        // 6. Снег
-        else if (code is 71 or 73 or 75 or 85 or 86)
-        {
-            advicePool = new[] {
-            "❄️ Время лепить снеговика и играть в снежки!",
-            "📸 Посмотри, как красиво! Пора сделать пару фото.",
-            "🎿 Лыжи сами себя не выгуляют. Пора в парк!",
-            "🧸 Снег — это просто бесплатное конфетти от природы. Наслаждайся."
-        };
-        }
-        // 7. Идеальная погода (Ясно/Облачно и тепло)
-        else if (temp > 15 && temp <= 27 && code <= 3)
-        {
-            advicePool = new[] {
-            "☀️ Кайфовая погода! Бросай всё и иди гулять.",
-            "🚲 Самое время для велосипеда или самоката.",
-            "🧘 Воздух — кайф. Можно даже помедитировать в парке.",
-            "✨ Сегодня твой день. Погода на твоей стороне!"
-        };
-        }
-        // 8. Обычная серая погода
-        else
-        {
-            advicePool = new[] {
-            "🌥️ Обычный день. Не забудь хорошее настроение!",
-            "🧥 Накинь куртку, лишним не будет.",
-            "🌈 Жизнь не только в погоде, она внутри тебя. Улыбнись!",
-            "🥞 Погода так себе, зато отличный повод приготовить блинчики."
-        };
-        }
-
-        // Возвращаем случайную фразу из выбранного набора
-        return advicePool[random.Next(advicePool.Length)];
+        if (dict.ContainsKey(city)) return dict[city];
+        return null;
     }
 
-    private async void StartFloatingAnimation()
+ 
+    private string GetYandexDescription(string condition) => condition switch
     {
-        while (_isAnimating)
-        {
-            await WeatherIconLabel.TranslateTo(0, -15, 1500, Easing.SinInOut);
-            await WeatherIconLabel.TranslateTo(0, 0, 1500, Easing.SinInOut);
-        }
-    }
+        "clear" => "ЯСНО",
+        "partly-cloudy" => "МАЛООБЛАЧНО",
+        "cloudy" => "ОБЛАЧНО",
+        "overcast" => "ПАСМУРНО",
+        "drizzle" => "МОРОСЬ",
+        "light-rain" => "НЕБОЛЬШОЙ ДОЖДЬ",
+        "rain" => "ДОЖДЬ",
+        "moderate-rain" => "СИЛЬНЫЙ ДОЖДЬ",
+        "heavy-rain" => "ЛИВЕНЬ",
+        "continuous-heavy-rain" => "ДОЛГИЙ ЛИВЕНЬ",
+        "showers" => "ЛИВЕНЬ",
+        "wet-snow" => "МОКРЫЙ СНЕГ",
+        "light-snow" => "НЕБОЛЬШОЙ СНЕГ",
+        "snow" => "СНЕГ",
+        "snow-showers" => "СНЕГОПАД",
+        "hail" => "ГРАД",
+        "thunderstorm" => "ГРОЗА",
+        "thunderstorm-with-rain" => "ДОЖДЬ С ГРОЗОЙ",
+        "thunderstorm-with-hail" => "ГРОЗА С ГРАДОМ",
+        _ => "НЕИЗВЕСТНО"
+    };
 
-    private void SetBackgroundTheme(int code)
+    private string GetYandexIcon(string condition) => condition switch
+    {
+        "clear" => "☀️",
+        "partly-cloudy" => "⛅",
+        "cloudy" or "overcast" => "☁️",
+        "drizzle" or "light-rain" => "🌦️",
+        "rain" or "moderate-rain" or "heavy-rain" or "continuous-heavy-rain" or "showers" => "🌧️",
+        "wet-snow" or "light-snow" or "snow" or "snow-showers" => "❄️",
+        "thunderstorm" or "thunderstorm-with-rain" or "thunderstorm-with-hail" => "⛈️",
+        _ => "🌈"
+    };
+
+    private void SetBackgroundTheme(string condition)
     {
         MainGradient.GradientStops.Clear();
-        if (code == 0) // Ясно
+        if (condition == "clear" || condition == "partly-cloudy")
         {
             MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#2980B9"), 0.0f));
             MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#6DD5FA"), 0.5f));
             MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#FF7E5F"), 1.0f));
         }
-        else if (code is 1 or 2 or 3) // Облачно
-        {
-            MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#2C3E50"), 0.0f));
-            MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#4CA1AF"), 1.0f));
-        }
-        else if (code is 61 or 63 or 65 or 80 or 81 or 82) // Дождь
+        else if (condition.Contains("rain") || condition == "showers" || condition == "drizzle")
         {
             MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#000046"), 0.0f));
             MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#1CB5E0"), 1.0f));
         }
-        else if (code is 71 or 73 or 75 or 85 or 86) // Снег
+        else if (condition.Contains("snow"))
         {
             MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#83a4d4"), 0.0f));
             MainGradient.GradientStops.Add(new GradientStop(Color.FromArgb("#b6fbff"), 1.0f));
@@ -329,42 +322,53 @@ public partial class MainPage : ContentPage
         }
     }
 
-    private string GetWeatherDescription(int code) => code switch
+    private string GetSmartAdvice(string condition, int temp, int wind)
     {
-        0 => "ЯСНО",
-        1 or 2 => "ОБЛАЧНО",
-        3 => "ПАСМУРНО",
-        45 or 48 => "ТУМАН",
-        51 or 53 or 55 => "МОРОСЬ",
-        61 or 63 or 65 => "ДОЖДЬ",
-        71 or 73 or 75 => "СНЕГ",
-        95 or 96 or 99 => "ГРОЗА",
-        _ => "НЕИЗВЕСТНО"
-    };
+        var random = new Random();
+        string[] pool;
 
-    private string GetWeatherIcon(int code) => code switch
+        if (temp < -15) pool = new[] { "🥶 Сиди дома, там дубак!", "🧣 Шапку надень, уши отморозишь." };
+        else if (condition.Contains("rain") || condition.Contains("thunderstorm")) pool = new[] { "☔ Зонт — твой лучший друг.", "🌧️ Мокрое дело!" };
+        else if (temp > 25) pool = new[] { "🍦 Время мороженого!", "☀️ Жара пошла." };
+        else if (wind > 12) pool = new[] { "💨 Осторожно, сдувает!" };
+        else pool = new[] { "☀️ Погодка — кайф, иди гулять.", "✨ Твой лучший день — сегодня." };
+        return pool[random.Next(pool.Length)];
+    }
+
+    private async void StartFloatingAnimation()
     {
-        0 => "☀️",
-        1 or 2 => "⛅",
-        3 => "☁️",
-        45 or 48 => "🌫️",
-        51 or 53 or 55 => "🌦️",
-        61 or 63 or 65 => "🌧️",
-        71 or 73 or 75 => "❄️",
-        95 or 96 or 99 => "⛈️",
-        _ => "🌈"
-    };
+        while (_isAnimating)
+        {
+            await WeatherIconLabel.TranslateTo(0, -15, 1500, Easing.SinInOut);
+            await WeatherIconLabel.TranslateTo(0, 0, 1500, Easing.SinInOut);
+        }
+    }
 }
 
-public class GeoResponse { public GeoLocation[]? Results { get; set; } }
-public class GeoLocation { public double Latitude { get; set; } public double Longitude { get; set; } }
-public class WeatherResponse { public CurrentWeather? Current { get; set; } }
-public class CurrentWeather
+public class YandexWeatherResponse
 {
-    [System.Text.Json.Serialization.JsonPropertyName("temperature_2m")] public double Temperature { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("relative_humidity_2m")] public int RelativeHumidity { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("surface_pressure")] public double SurfacePressure { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("weather_code")] public int WeatherCode { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("wind_speed_10m")] public double WindSpeed { get; set; }
-    [System.Text.Json.Serialization.JsonPropertyName("apparent_temperature")] public double ApparentTemperature { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("fact")]
+    public YandexFact? Fact { get; set; }
 }
+
+public class YandexFact
+{
+    [System.Text.Json.Serialization.JsonPropertyName("temp")]
+    public double Temp { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("feels_like")]
+    public double FeelsLike { get; set; }
+    [System.Text.Json.Serialization.JsonPropertyName("wind_speed")]
+    public double WindSpeed { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("pressure_mm")]
+    public double PressureMm { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("humidity")]
+    public double Humidity { get; set; }
+
+    [System.Text.Json.Serialization.JsonPropertyName("condition")]
+    public string? Condition { get; set; }
+}
+
+public class GeoResponse { [System.Text.Json.Serialization.JsonPropertyName("results")] public GeoLocation[]? Results { get; set; } }
+public class GeoLocation { [System.Text.Json.Serialization.JsonPropertyName("latitude")] public double Latitude { get; set; } [System.Text.Json.Serialization.JsonPropertyName("longitude")] public double Longitude { get; set; } }

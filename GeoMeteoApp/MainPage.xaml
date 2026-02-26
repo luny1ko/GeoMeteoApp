@@ -13,14 +13,13 @@
     </ContentPage.Background>
 
     <ScrollView>
-        <!-- Устанавливаем Fill, чтобы контейнер не сжимал детей -->
         <VerticalStackLayout x:Name="MainContainer" 
                              Opacity="0" 
                              Spacing="25" 
                              Padding="0,40,0,40" 
                              HorizontalOptions="Fill">
 
-            <!-- ЛОГОТИП -->
+         
             <VerticalStackLayout Spacing="5" HorizontalOptions="Center">
                 <Label Text="GEO METEO" TextColor="White" FontSize="20" FontAttributes="Bold" HorizontalOptions="Center" CharacterSpacing="4" Opacity="0.7"/>
                 <Label x:Name="GreetingLabel" Text="Привет!" TextColor="White" FontSize="32" FontAttributes="Bold" HorizontalOptions="Center">
@@ -30,7 +29,7 @@
                 </Label>
             </VerticalStackLayout>
 
-            <!-- КАРТОЧКА УПРАВЛЕНИЯ (ЖЕСТКАЯ ШИРИНА 460) -->
+           
             <Border Stroke="White" 
                     StrokeThickness="2" 
                     StrokeShape="RoundRectangle 30" 
@@ -50,7 +49,6 @@
                 <VerticalStackLayout Spacing="20">
                     <Label Text="ПОИСК ЛОКАЦИИ" TextColor="#F0F0F0" FontSize="11" FontAttributes="Bold" CharacterSpacing="2" HorizontalOptions="Center" Opacity="0.8"/>
 
-                    <!-- СЕТКА: Поле города и кнопки -->
                     <Grid ColumnDefinitions="*, Auto, Auto" ColumnSpacing="12">
                         <Border Grid.Column="0" BackgroundColor="#25FFFFFF" Stroke="White" StrokeThickness="1" StrokeShape="RoundRectangle 15" Padding="10,0" HeightRequest="80">
                             <Picker x:Name="CityPicker" Title="Город..." TitleColor="#E0E0E0" TextColor="White" FontSize="16" VerticalOptions="Center" HorizontalTextAlignment="Center"/>
@@ -71,7 +69,6 @@
                         </Border>
                     </Grid>
 
-                    <!-- Поле ввода -->
                     <Border x:Name="AddCityLayout" StrokeThickness="0" BackgroundColor="Transparent" IsVisible="False">
                         <Grid ColumnDefinitions="*, Auto" ColumnSpacing="10">
                             <Border BackgroundColor="#25FFFFFF" Stroke="White" StrokeThickness="1" StrokeShape="RoundRectangle 10" Padding="10,0" Grid.Column="0">
@@ -81,7 +78,6 @@
                         </Grid>
                     </Border>
 
-                    <!-- КНОПКА (С нормальной черной тенью и запасом Margin) -->
                     <Border x:Name="MainActionButton" BackgroundColor="White" StrokeThickness="0" StrokeShape="RoundRectangle 30" HeightRequest="60" Margin="5,15,5,10">
                         <Border.Shadow>
                             <Shadow Brush="Black" Offset="0,8" Radius="15" Opacity="0.2"/>
@@ -94,7 +90,7 @@
                 </VerticalStackLayout>
             </Border>
 
-            <!-- КАРТОЧКА РЕЗУЛЬТАТА (ЖЕСТКАЯ ШИРИНА 460) -->
+         
             <Border x:Name="WeatherResultLayout" 
                     IsVisible="False" 
                     Opacity="0" 
@@ -126,7 +122,6 @@
 
                     <BoxView HeightRequest="1" Color="#80FFFFFF" WidthRequest="200" Margin="0,20" HorizontalOptions="Center"/>
 
-                    <!-- СЕТКА ДАННЫХ -->
                     <Grid ColumnDefinitions="*,*" RowDefinitions="Auto,Auto" ColumnSpacing="30" RowSpacing="20">
                         <VerticalStackLayout Grid.Row="0" Grid.Column="0" Spacing="2">
                             <Label Text="💧 ВЛАЖНОСТЬ" TextColor="#DDD" FontSize="10" HorizontalOptions="Center" FontAttributes="Bold"/>
